@@ -167,15 +167,15 @@ class SimpleSteganography(SteganographyEncoder):
                     curr_byte_list = curr_byte_list[8:]
 
                 # Stop if we've reached our termination characters
-                if len(data) >= len(TERMINATION_SEQUENCE):
-                    decode_complete = ''.join(data[-len(TERMINATION_SEQUENCE):]) == TERMINATION_SEQUENCE
+                if len(data) >= len(self.termination_sequence):
+                    decode_complete = ''.join(data[-len(self.termination_sequence):]) == self.termination_sequence
                     if decode_complete:
                         break
             if decode_complete:
                 break
 
         # Strip off the termination bytes
-        return ''.join(data[:-len(TERMINATION_SEQUENCE)])
+        return ''.join(data[:-len(self.termination_sequence)])
 
     def get_decode_data_bits(self, color_byte, bits_to_decode):
         raise NotImplementedError("Not Implemented")

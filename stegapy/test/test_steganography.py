@@ -1,6 +1,6 @@
 from unittest import TestCase
 import itertools
-from stegapy import ForwardSteganography, FileTooLargeException, BackwardSteganography
+from stegapy import ForwardSteganography, FileTooLargeException, BackwardSteganography, dec_2_bin
 from PIL import Image
 
 
@@ -57,6 +57,39 @@ class TestForwardSteganography(TestCase):
             # Mask off all but the last bit of each channel and compare to the expected bit
             self.assertEqual(out & 0x01, expected)
 
+    def test_decode_full(self):
+        # 32 bytes where the last bits alternate 0 then 1 followed by the termination sequence
+        # TODO: Find a better way to create encoded images
+        image_bytes = "\x00\xff" * 16 + "\xff" * 16
+        im = Image.frombytes('RGB', (4, 4), image_bytes)
+        out_str = self.steg.decode(im)
+        out_bits = []
+        for char in out_str:
+            out_bits.extend(dec_2_bin(ord(char)))
+        self.assertListEqual(['0', '1'] * 16, out_bits)
+
+    def test_decode_not_full(self):
+        # 16 bytes where the last bits alternate 0 then 1 followed by the termination sequence then whatever
+        image_bytes = "\x00\xff" * 8 + "\xff" * 32
+        im = Image.frombytes('RGB', (4, 4), image_bytes)
+        out_str =  self.steg.decode(im)
+        out_bits = []
+        for char in out_str:
+            out_bits.extend(dec_2_bin(ord(char)))
+        self.assertListEqual(['0', '1'] * 8, out_bits)
+
+    def test_decode_zero_channel(self):
+        self.steg.color_bits = [1, 2, 0]
+        # Since this grabs 1 2 then 0 bits it should result in 011 repeating
+        image_bytes = "\x00\xff\x00" * 10 + "\x00\xff" + "\xff" * 16
+        im = Image.frombytes('RGB', (4, 4), image_bytes)
+        out_str =  self.steg.decode(im)
+        out_bits = []
+        for char in out_str:
+            out_bits.extend(dec_2_bin(ord(char)))
+        expected_bits = ['0', '1', '1'] * 10 + ['0', '1']
+        self.assertListEqual(expected_bits, out_bits)
+
 
 class TestBackwardSteganography(TestCase):
 
@@ -111,3 +144,35 @@ class TestBackwardSteganography(TestCase):
             # Mask off all but the last bit of each channel and compare to the expected bit
             self.assertEqual(out & 0x01, expected)
 
+    def test_decode_full(self):
+        # 32 bytes where the last bits alternate 0 then 1 followed by the termination sequence
+        # TODO: Find a better way to create encoded images
+        image_bytes = "\x00\xff" * 16 + "\xff" * 16
+        im = Image.frombytes('RGB', (4, 4), image_bytes)
+        out_str = self.steg.decode(im)
+        out_bits = []
+        for char in out_str:
+            out_bits.extend(dec_2_bin(ord(char)))
+        self.assertListEqual(['0', '1'] * 16, out_bits)
+
+    def test_decode_not_full(self):
+        # 16 bytes where the last bits alternate 0 then 1 followed by the termination sequence then whatever
+        image_bytes = "\x00\xff" * 8 + "\xff" * 32
+        im = Image.frombytes('RGB', (4, 4), image_bytes)
+        out_str =  self.steg.decode(im)
+        out_bits = []
+        for char in out_str:
+            out_bits.extend(dec_2_bin(ord(char)))
+        self.assertListEqual(['0', '1'] * 8, out_bits)
+
+    def test_decode_zero_channel(self):
+        self.steg.color_bits = [1, 2, 0]
+        # Since this grabs 1 2 then 0 bits it should result in 001 repeating
+        image_bytes = "\x00\xaa\x00" * 10 + "\x00\xff" + "\xff" * 16
+        im = Image.frombytes('RGB', (4, 4), image_bytes)
+        out_str =  self.steg.decode(im)
+        out_bits = []
+        for char in out_str:
+            out_bits.extend(dec_2_bin(ord(char)))
+        expected_bits = ['0', '0', '1'] * 10 + ['0', '1']
+        self.assertListEqual(expected_bits, out_bits)
